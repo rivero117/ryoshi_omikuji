@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>量子おみくじ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="style2.css" />
+  <!-- JS -->
+  <script src="script2.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <div class="intro">
+      <h1>量子おみくじ</h1>
+      <div class="subtitle">観測されるまで、運勢は決まらない。</div>
+
+      <p class="description">
+        これは、量子のふるまいをモチーフにしたおみくじです。<br />
+        まずは「おみくじを引く」ボタンを押して、量子の世界の扉を開いてください。
+      </p>
+    </div>
+
+    <div class="start-button-wrapper">
+      <button id="startButton" class="start-button">おみくじを引く</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <!-- 量子がぴょこぴょこするロードアニメ -->
+    <div id="quantumLoading" class="quantum-loading" style="display:none;">
+      <div class="quantum-dot"></div>
+      <div class="quantum-dot"></div>
+      <div class="quantum-dot"></div>
+    </div>
+
+    <!-- おみくじ札たち（最初は非表示、ステップ2で出す） -->
+    <div class="tickets">
+      <div class="omikuji-card" data-id="0">
+        <span class="omikuji-sub">壱</span>
+      </div>
+      <div class="omikuji-card" data-id="1">
+        <span class="omikuji-sub">弐</span>
+      </div>
+      <div class="omikuji-card" data-id="2">
+        <span class="omikuji-sub">参</span>
+      </div>
+      <div class="omikuji-card" data-id="3">
+        <span class="omikuji-sub">肆</span>
+      </div>
+    </div>
+
+    <!-- 結果表示 -->
+    <div id="result" class="result-card" style="display:none;">
+      <div id="resultTag" class="result-tag"></div>
+      <div id="resultTitle" class="result-title"></div>
+      <div id="resultMessage" class="result-message"></div>
+      <div class="result-detail-title">量子ミニ解説</div>
+      <div id="resultDetail" class="result-detail"></div>
+    </div>
+
+    <div class="footer">
+      ※本物の量子コンピュータは、もっと真面目な計算に使われています。<br />
+      これは「量子の世界」と「人生のゆらぎ」をちょっとだけ感じるためのおみくじです。
+    </div>
+  </div>
+</body>
+</html>
