@@ -2,67 +2,470 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>量子おみくじ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CSS -->
-  <link rel="stylesheet" href="style2.css" />
-  <!-- JS -->
-  <script src="script2.js" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>量子おみくじ | Quantum Omikuji</title>
+
+  <style>
+    :root {
+      --blue-dark: #0b1c3d;
+      --blue-mid: #0f2f6b;
+      --yellow: #ffd54a;
+      --red: #c40000;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      background: radial-gradient(circle at top, var(--blue-mid), var(--blue-dark));
+      color: #fff;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      letter-spacing: 0.4em;
+      color: var(--yellow);
+      margin: 0;
+    }
+
+    .subtitle {
+      font-family: system-ui, sans-serif;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    /* 引くボタン */
+    .draw-btn {
+      width: 240px;
+      height: 56px;
+      background: #fff;
+      color: var(--red);
+      border: 1px solid var(--red);
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    /* 観測中アニメーション */
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .circle {
+      width: 48px;
+      height: 48px;
+      border: 2px solid var(--yellow);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+    }
+
+    .loading-text {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      color: var(--yellow);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* おみくじ本体 */
+    .omikuji {
+      display: none;
+      width: 750px;          /* 横を広げる */
+      height: 300px;         /* 縦を少し抑える（縦1 : 横2.5） */
+      background: #fff;
+      border: 2px solid var(--red);
+      box-shadow: 0 0 0 4px rgba(15,47,107,0.8);
+      padding: 28px 36px;    /* 横余白をしっかり */
+      color: #000;
+      overflow: hidden;
+      transform-origin: top center;
+      animation: none;
+    }
+
+    .omikuji.open {
+      animation: openScroll 0.9s ease-out forwards;
+    }
+
+    @keyframes openScroll {
+      0% {
+        transform: scaleY(0);
+        opacity: 0;
+      }
+      60% {
+        transform: scaleY(1.05);
+        opacity: 1;
+      }
+      100% {
+        transform: scaleY(1);
+      }
+    }
+
+    .result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+    }
+
+    .omikuji-inner {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      width: 100%;
+      gap: 32px;
+    }
+
+    .left-col {
+      width: 160px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding-right: 16px;
+      border-right: 1px solid rgba(196,0,0,0.3);
+    }
+
+    .luck-vertical {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 1.6rem;
+      letter-spacing: 0.15em;
+      color: var(--red);
+      white-space: nowrap;
+    }
+
+    .tag-vertical {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: 'Times New Roman', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      color: var(--red);
+      opacity: 0.85;
+      white-space: nowrap;
+    }
+
+    .right-col {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 16px;
+    }
+
+    .result h2 {
+      margin: 0;
+      color: var(--red);
+      letter-spacing: 0.2em;
+    }
+
+    .tag {
+      font-family: 'Times New Roman', serif;
+      letter-spacing: 0.2em;
+      color: var(--red);
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+
+    .columns {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 100%;
+    }
+
+    .columns p {
+      writing-mode: horizontal-tb;
+      margin: 0;
+      line-height: 1.9;
+    }
+
+    #message {
+      font-size: 0.95rem; /* 少し小さく */
+    }
+
+    #mini {
+      font-size: 0.75rem; /* 解説はさらに小さく */
+      opacity: 0.8;
+    }
+
+    .retry {
+      background: transparent;
+      border: 1px solid var(--red);
+      color: var(--red);
+      padding: 6px 16px;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: -8px; /* 少し上に持ち上げる */
+    }
+
+    /* 結果一覧 */
+    .list-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: #fff;
+      border: 1px solid var(--red);
+      color: var(--red);
+      font-family: inherit;
+      padding: 6px 10px;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .list-view {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: #0b1c3d;
+      background-image:
+        radial-gradient(circle at top, rgba(255,213,74,0.18) 1px, transparent 1px),
+        linear-gradient(#0f2f6b, #0b1c3d);
+      background-size: 120px 120px, 100% 100%;
+      color: #fff;
+      z-index: 9999;
+      overflow: auto;
+      padding: 48px 40px 96px; /* 下に余白を足す */
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    }
+
+    .list-view .retry {
+      display: block;
+      margin: 56px auto 0;   /* ちょっと下へ */
+      padding: 10px 22px;   /* 視認性アップ */
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
+      color: #0b1c3d;
+      background: #ffd54a;  /* 黄色でコントラスト */
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    }
+
+    .list-view .retry:hover {
+      transform: translateY(1px);
+      box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+    }
+
+    .list-view h2 {
+      color: #ffd54a; /* 黄色で主題感 */
+      letter-spacing: 0.35em;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .list-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 32px;
+      margin-top: 24px;
+    }
+
+    .list-card {
+      border: 1px solid rgba(255,213,74,0.8);
+      padding: 18px 22px;
+      background: rgba(255,255,255,0.95);
+      color: #000;
+      box-shadow: 2px 2px 0 rgba(255,213,74,0.25);
+    }
+
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="intro">
-      <h1>量子おみくじ</h1>
-      <div class="subtitle">観測されるまで、運勢は決まらない。</div>
 
-      <p class="description">
-        これは、量子のふるまいをモチーフにしたおみくじです。<br />
-        まずは「おみくじを引く」ボタンを押して、量子の世界の扉を開いてください。
-      </p>
-    </div>
+<canvas id="bg"></canvas>
 
-    <div class="start-button-wrapper">
-      <button id="startButton" class="start-button">おみくじを引く</button>
-    </div>
+<button class="list-btn" id="listBtn">結果一覧</button>
 
-    <div id="status" class="status"></div>
+<div class="container">
+  <h1>量子おみくじ</h1>
+  <div class="subtitle">Quantum Computing meets Omikuji</div>
 
-    <!-- 量子がぴょこぴょこするロードアニメ -->
-    <div id="quantumLoading" class="quantum-loading" style="display:none;">
-      <div class="quantum-dot"></div>
-      <div class="quantum-dot"></div>
-      <div class="quantum-dot"></div>
-    </div>
+  <button class="draw-btn" id="drawBtn">おみくじを引く</button>
 
-    <!-- おみくじ札たち（最初は非表示、ステップ2で出す） -->
-    <div class="tickets">
-      <div class="omikuji-card" data-id="0">
-        <span class="omikuji-sub">壱</span>
+  <!-- 観測中アニメーション -->
+  <div class="loading" id="loading">
+    <div class="circle"></div>
+    <div class="loading-text">観測中…</div>
+  </div>
+
+  <div class="omikuji" id="omikuji">
+    <div class="result">
+      <div class="omikuji-inner">
+        <div class="left-col">
+          <div class="luck-vertical" id="luck">重ね合わせ大吉</div>
+          <div class="tag-vertical" id="tag">SUPERPOSITION</div>
+        </div>
+        <div class="right-col">
+          <div class="columns">
+        <p id="message">いくつもの可能性が同時に存在中。</p>
+        <p id="mini">観測されるまで状態が重なっています。</p>
+                </div>
+        </div>
       </div>
-      <div class="omikuji-card" data-id="1">
-        <span class="omikuji-sub">弐</span>
-      </div>
-      <div class="omikuji-card" data-id="2">
-        <span class="omikuji-sub">参</span>
-      </div>
-      <div class="omikuji-card" data-id="3">
-        <span class="omikuji-sub">肆</span>
-      </div>
-    </div>
-
-    <!-- 結果表示 -->
-    <div id="result" class="result-card" style="display:none;">
-      <div id="resultTag" class="result-tag"></div>
-      <div id="resultTitle" class="result-title"></div>
-      <div id="resultMessage" class="result-message"></div>
-      <div class="result-detail-title">量子ミニ解説</div>
-      <div id="resultDetail" class="result-detail"></div>
-    </div>
-
-    <div class="footer">
-      ※本物の量子コンピュータは、もっと真面目な計算に使われています。<br />
-      これは「量子の世界」と「人生のゆらぎ」をちょっとだけ感じるためのおみくじです。
+      <button class="retry" id="retry">もう一度</button>
     </div>
   </div>
+</div>
+
+<div class="list-view" id="listView">
+  <h2>量子おみくじ 結果一覧</h2>
+  <div class="list-grid" id="listGrid"></div>
+  <button class="retry" id="closeList">戻る</button>
+</div>
+
+<script>
+/* 背景の粒子 */
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const particles = Array.from({ length: 90 }, () => ({
+  x: Math.random() * w,
+  y: Math.random() * h,
+  vx: (Math.random() - 0.5) * 1.5,
+  vy: (Math.random() - 0.5) * 1.5,
+}));
+
+function draw() {
+  ctx.clearRect(0, 0, w, h);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0 || p.x > w) p.vx *= -1;
+    if (p.y < 0 || p.y > h) p.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,213,74,0.8)';
+    ctx.fill();
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* おみくじデータ */
+const results = [
+  {
+    luck: '重ね合わせ大吉',
+    tag: 'SUPERPOSITION',
+    msg: 'いくつもの可能性が同時に存在中。やりたいことを絞らず、まずは手をつけてみて。',
+    mini: '観測されるまで状態が重なっているように、今のあなたの未来もまだ一つに決まっていません。\n迷っているなら、どれも「正解になりうる」状態です。'
+  },
+  {
+    luck: '観測次第吉',
+    tag: 'MEASUREMENT',
+    msg: '行動した瞬間に運勢が決まります。気になることは\n「とりあえずやってみる」が吉。',
+    mini: '量子は観測された瞬間に状態が確定します。\n見ているだけでは何も起こらないのは、恋も同じかもしれません。'
+  },
+  {
+    luck: 'エンタングル大吉',
+    tag: 'ENTANGLEMENT',
+    msg: 'あなたの行動が、思わぬところで誰かを動かします。チーム活動やコラボに積極的になると運気UP。',
+    mini: '離れていても影響し合う「量子もつれ」。あなたの気持ちも、もう誰かとつながっているのかも。'
+  },
+  {
+    luck: 'トンネル効果小吉',
+    tag: 'TUNNELING',
+    msg: '「無理そう」に見える壁も、意外とすり抜けられるかも。\nいつもと違うやり方を1つ試してみて。',
+    mini: '越えられないはずの壁を越える現象が、量子の世界にはあります。遠回りに見える道が\nもしかしたらいちばん近道かもしれません。'
+  },
+  {
+    luck: 'デコヒーレンス注意',
+    tag: 'DECOHERENCE',
+    msg: '頭の中がごちゃごちゃしがち。情報を一度ノートに書き出して整理すると◎',
+    mini: '周囲のノイズで状態が乱れる「デコヒーレンス」。今日は少しだけ、\n周りより自分の気持ちを優先して。'
+  }
+];
+
+/* DOM */
+const drawBtn = document.getElementById('drawBtn');
+const loading = document.getElementById('loading');
+const omikuji = document.getElementById('omikuji');
+const luck = document.getElementById('luck');
+const tag = document.getElementById('tag');
+const message = document.getElementById('message');
+const mini = document.getElementById('mini');
+const retry = document.getElementById('retry');
+
+const listBtn = document.getElementById('listBtn');
+const listView = document.getElementById('listView');
+const listGrid = document.getElementById('listGrid');
+const closeList = document.getElementById('closeList');
+
+/* 動作 */
+drawBtn.addEventListener('click', () => {
+  drawBtn.style.display = 'none';
+  loading.style.display = 'flex';
+
+  setTimeout(() => {
+    const r = results[Math.floor(Math.random() * results.length)];
+    luck.textContent = r.luck;
+    tag.textContent = r.tag;
+    message.textContent = r.msg;
+    mini.textContent = r.mini;
+
+    loading.style.display = 'none';
+    omikuji.style.display = 'block';
+    omikuji.classList.remove('open');
+    void omikuji.offsetWidth; // reflow
+    omikuji.classList.add('open');
+  }, 1800);
+});
+
+retry.addEventListener('click', () => {
+  omikuji.style.display = 'none';
+  drawBtn.style.display = 'block';
+});
+
+listBtn.addEventListener('click', () => {
+  listGrid.innerHTML = '';
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'list-card';
+    div.innerHTML = `<strong>${r.luck}</strong><br><small>${r.tag}</small><p>${r.msg}</p>`;
+    listGrid.appendChild(div);
+  });
+  listView.style.display = 'block';
+});
+
+closeList.addEventListener('click', () => {
+  listView.style.display = 'none';
+});
+</script>
+
 </body>
 </html>
